@@ -1,20 +1,34 @@
 import * as fs from 'fs'
+import * as path from 'path'
 import puppenv from './puppenv'
 import './puppenv.utils'
 require = require('esm')(module) 
 const defaultDocereConfigData = require('docere-config').default
 
+function logError(msg: string) {
+	console.log("\x1b[31m", msg, "\x1b[0m")
+}
+
 import indexDocument, { createIndex, deleteIndex } from './index-document'
 
 async function main() {
-	const projectSlug = 'vangogh'
-	const dcdImport: { default: DocereConfigData } = await import(`docere-config/projects/${projectSlug}/index.js`)
+	const projectSlug = process.argv[2]
+	if (projectSlug == null) return logError('No project ID!')
+
+	const configPath = path.resolve(`node_modules/docere-config/projects/${projectSlug}/index.js`)
+	if (!fs.existsSync(configPath)) {
+		return logError(`No config file for project: ${projectSlug}`)
+	}
+	const dcdImport: { default: DocereConfigData } = await import(configPath)
 	const docereConfigData: DocereConfigData = {
 		...defaultDocereConfigData,
 		...dcdImport.default,
 		config: {...defaultDocereConfigData.config, ...dcdImport.default.config }
 	}
 	const files = fs.readdirSync(`node_modules/docere-config/projects/${projectSlug}/xml`)
+	if (!files.length) {
+		return logError(`No files found for project: ${projectSlug}`)
+	}
 	const data = await puppenv(docereConfigData, files)
 
 	// Update the index
