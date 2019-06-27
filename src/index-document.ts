@@ -1,5 +1,4 @@
 import * as es from 'elasticsearch'
-import { defaultMetadata } from 'docere-config'
 
 const client = new es.Client({
 	host: 'localhost:9200'
@@ -17,13 +16,11 @@ export async function createIndex(slug: string, config: DocereConfig) {
 	const properties: Record<string, { type: EsDataType }> = {}
 
 	config.metadata.forEach(md => {
-		const metadataConfig = { ...defaultMetadata, ...md }
-		properties[metadataConfig.id] = { type: metadataConfig.datatype }
+		properties[md.id] = { type: md.datatype }
 	})
 
 	config.textdata.forEach(td => {
-		const textdataConfig = { ...defaultMetadata, ...td }
-		properties[textdataConfig.id] = { type: textdataConfig.datatype }
+		properties[td.id] = { type: td.datatype }
 	})
 
 	properties.text = { type: EsDataType.text }

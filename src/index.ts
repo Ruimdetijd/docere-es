@@ -25,6 +25,7 @@ async function main() {
 		...dcdImport.default,
 		config: {...defaultDocereConfigData.config, ...dcdImport.default.config }
 	}
+
 	const files = fs.readdirSync(`node_modules/docere-config/projects/${projectSlug}/xml`)
 	if (!files.length) {
 		return logError(`No files found for project: ${projectSlug}`)
