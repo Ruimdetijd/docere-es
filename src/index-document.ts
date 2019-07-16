@@ -12,18 +12,27 @@ export async function deleteIndex(slug: string) {
 	}
 }
 
-export async function createIndex(slug: string, config: DocereConfig) {
+function getType(key: string, config: DocereConfig): EsDataType {
+	let type = EsDataType.keyword
+
+	const mdConfig = config.metadata.find(md => md.id === key)
+	if (mdConfig != null && mdConfig.datatype != null) type = mdConfig.datatype
+
+	const tdConfig = config.textdata.find(md => md.id === key)
+	if (tdConfig != null && tdConfig.datatype != null) type = tdConfig.datatype
+
+	if (key === 'text') type = EsDataType.text
+
+	return type
+}
+
+export async function createIndex(slug: string, indexData: IndexData[], config: DocereConfig) {
 	const properties: Record<string, { type: EsDataType }> = {}
 
-	config.metadata.forEach(md => {
-		properties[md.id] = { type: md.datatype }
-	})
-
-	config.textdata.forEach(td => {
-		properties[td.id] = { type: td.datatype }
-	})
-
-	properties.text = { type: EsDataType.text }
+	Object.keys(indexData[0])
+		.forEach(key => {
+			properties[key] = { type: getType(key, config) }
+		})
 
 	try {
 		await client.indices.create({

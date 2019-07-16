@@ -30,18 +30,23 @@ async function main() {
 	if (!files.length) {
 		return logError(`No files found for project: ${projectSlug}`)
 	}
-	const data = await puppenv(docereConfigData, files)
+
+	const indexData = await puppenv(docereConfigData, files)
+	
+	if (!indexData.length) {
+		return logError(`No data to index for project: ${projectSlug}`)
+	}
 
 	// Update the index
 	await deleteIndex(projectSlug)
-	await createIndex(projectSlug, docereConfigData.config)
+	await createIndex(projectSlug, indexData, docereConfigData.config)
 
 	// Create a Set of metadata and textdata keys to enable a check 
 	// which meta/text data is not configured
 	const metadataKeys = new Set()
 
 	// Loop through every document in order to index them
-	for (const d of data) {
+	for (const d of indexData) {
 		// Add the metadata and textdata keys to the Set
 		Object.keys(d).forEach(key => metadataKeys.add(key))
 
