@@ -26,10 +26,10 @@ function getType(key: string, config: DocereConfig): EsDataType {
 	return type
 }
 
-export async function createIndex(slug: string, indexData: IndexData[], config: DocereConfig) {
+export async function createIndex(slug: string, indexData: IndexData, config: DocereConfig) {
 	const properties: Record<string, { type: EsDataType }> = {}
 
-	Object.keys(indexData[0])
+	Object.keys(indexData)
 		.forEach(key => {
 			properties[key] = { type: getType(key, config) }
 		})

@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import puppenv from './puppenv'
+import Puppenv from './puppenv'
 import './puppenv.utils'
 require = require('esm')(module) 
 const defaultDocereConfigData = require('docere-config').default
@@ -31,33 +31,25 @@ async function main() {
 		return logError(`No files found for project: ${projectSlug}`)
 	}
 
-	const indexData = await puppenv(docereConfigData, files)
-	
-	if (!indexData.length) {
-		return logError(`No data to index for project: ${projectSlug}`)
-	}
+	const puppenv = new Puppenv(docereConfigData)
+	await puppenv.start()
+	const indexData = await puppenv.parseFile(files[0])
+	const metadataKeys = new Set(Object.keys(indexData))
 
-	// Update the index
 	await deleteIndex(projectSlug)
 	await createIndex(projectSlug, indexData, docereConfigData.config)
 
-	// Create a Set of metadata and textdata keys to enable a check 
-	// which meta/text data is not configured
-	const metadataKeys = new Set()
-
-	// Loop through every document in order to index them
-	for (const d of indexData) {
-		// Add the metadata and textdata keys to the Set
-		Object.keys(d).forEach(key => metadataKeys.add(key))
-
-		await indexDocument(projectSlug, d)
-		console.log(`Indexed document "${d.id}" of "${projectSlug}"`)
+	for (const file of files.slice(1)) {
+		const indexData = await puppenv.parseFile(file)
+		await indexDocument(projectSlug, indexData)
+		console.log(`Indexed document "${indexData.id}" of "${projectSlug}"`)
 	}
 
+	await puppenv.close()
 
 	// Of all the found metadata and text data remove the already configured keys. 
-	docereConfigData.config.metadata.forEach(md => metadataKeys.delete(md.id))
-	docereConfigData.config.textdata.forEach(td => metadataKeys.delete(td.id))
+	// docereConfigData.config.metadata.forEach(md => metadataKeys.delete(md.id))
+	// docereConfigData.config.textdata.forEach(td => metadataKeys.delete(td.id))
 	// Remove the keys specifically added for the index
 	metadataKeys.delete('id')
 	metadataKeys.delete('facsimiles')
