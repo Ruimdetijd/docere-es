@@ -1,7 +1,7 @@
-import * as es from 'elasticsearch'
+import * as es from '@elastic/elasticsearch'
 
 const client = new es.Client({
-	host: 'localhost:9200'
+	node: 'http://localhost:9200'
 })
 
 export async function deleteIndex(slug: string) {
@@ -52,6 +52,7 @@ export async function createIndex(slug: string, indexData: IndexData, config: Do
 
 export default async function indexDocument(projectSlug: string, indexDocument: any) {
 	const { id, ...body } = indexDocument
+
 	try {
 		await client.index({
 			id,

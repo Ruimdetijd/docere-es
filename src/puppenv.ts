@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer'
 import express from 'express'
-import { Server } from 'http';
+import { Server } from 'http'
 
 declare function extractFacsimiles(doc: XMLDocument): ExtractedFacsimile[]
 declare function extractMetadata(doc: XMLDocument): ExtractedMetadata
@@ -27,8 +27,6 @@ async function evaluateFunc(docereConfig: DocereConfig, fileName: string): Promi
 
 	// Metadata
 	const metadata = extractMetadata(doc)
-
-	// console.log(`Prepared and extracted data from: "${fileName}"`)
 
 	return {
 		id: fileName.slice(-4) === '.xml' ? fileName.slice(0, -4) : fileName,
