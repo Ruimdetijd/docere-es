@@ -26,20 +26,19 @@ async function main() {
 		config: {...defaultDocereConfigData.config, ...dcdImport.default.config }
 	}
 
-	const files = fs.readdirSync(`node_modules/docere-config/projects/${projectSlug}/xml`)
+	const files = fs.readdirSync(`node_modules/docere-config/projects/${projectSlug}/xml`) //.slice(0, 30)
 	if (!files.length) {
 		return logError(`No files found for project: ${projectSlug}`)
 	}
 
 	const puppenv = new Puppenv(docereConfigData)
 	await puppenv.start()
-	const indexData = await puppenv.parseFile(files[0])
-	const metadataKeys = new Set(Object.keys(indexData))
+	const metadataKeys = await puppenv.extractIndexKeys(files)
 
 	await deleteIndex(projectSlug)
-	await createIndex(projectSlug, indexData, docereConfigData.config)
+	await createIndex(projectSlug, metadataKeys, docereConfigData.config)
 
-	for (const file of files.slice(1)) {
+	for (const file of files) {
 		const indexData = await puppenv.parseFile(file)
 		await indexDocument(projectSlug, indexData)
 		console.log(`Indexed document "${indexData.id}" of "${projectSlug}"`)

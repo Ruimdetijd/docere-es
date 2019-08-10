@@ -26,14 +26,17 @@ function getType(key: string, config: DocereConfig): EsDataType {
 	return type
 }
 
-export async function createIndex(slug: string, indexData: IndexData, config: DocereConfig) {
+export async function createIndex(slug: string, metadataKeys: Set<string>, config: DocereConfig) {
 	const properties: Record<string, { type: EsDataType }> = {}
 
-	Object.keys(indexData)
+	config.metadata.forEach(md => metadataKeys.add(md.id))
+	config.textdata.forEach(td => metadataKeys.add(td.id))
+
+	metadataKeys
 		.forEach(key => {
 			properties[key] = { type: getType(key, config) }
 		})
-
+	
 	try {
 		await client.indices.create({
 			index: slug,

@@ -7,15 +7,12 @@ declare function extractMetadata(doc: XMLDocument): ExtractedMetadata
 declare function extractTextData(doc: XMLDocument, config: DocereConfig): ExtractedTextData
 declare function prepareDocument(doc: XMLDocument, config: DocereConfig, id?: string): XMLDocument
 
-async function evaluateFunc(docereConfig: DocereConfig, fileName: string): Promise<IndexData> {
+async function evaluateParseFile(docereConfig: DocereConfig, fileName: string): Promise<IndexData> {
 	const xmlRoot = await fetchXml(`./${docereConfig.slug}/xml/${fileName}`)
 
 	// TODO use ID for when splitting is needed
 	// Prepare document
 	const doc = await prepareDocument(xmlRoot, docereConfig)
-
-	// Facsimiles
-	const facsimiles = extractFacsimiles(doc)
 
 	// Text data
 	let textData = {} as any
@@ -31,7 +28,8 @@ async function evaluateFunc(docereConfig: DocereConfig, fileName: string): Promi
 	return {
 		id: fileName.slice(-4) === '.xml' ? fileName.slice(0, -4) : fileName,
 		text: doc.documentElement.textContent,
-		facsimiles,
+		// For indexing, we only need the facsimile paths
+		facsimiles: extractFacsimiles(doc).reduce((prev, curr) => prev.concat(curr.path), []),
 		...metadata,
 		...textData
 	}
@@ -74,10 +72,43 @@ export default class Puppenv {
 
 	async parseFile(fileName: string) {
 		return await this.page.evaluate(
-			evaluateFunc,
+			evaluateParseFile,
 			this.docereConfigData.config as any,
 			fileName
 		)
+	}
+
+	async extractIndexKeys(files: string[]) {
+		const keys: Set<string> = new Set()
+
+		// Take a subset of the files to extract the metadata. If we do all the files
+		// it can take a very long time. The extracted data is combined with the metadata
+		// and textdata config to create an Elastic Search mapping. Without this extraction
+		// we would miss the non-configured metadata and textdata. Without the config
+		// metadata and textdata IDs we could miss a metadata or text data which is not
+		// defined in the subset.
+		const files2 = [
+			files[0],
+			files[Math.floor(files.length * .125)],
+			files[Math.floor(files.length * .25)],
+			files[Math.floor(files.length * .375)],
+			files[Math.floor(files.length * .5)],
+			files[Math.floor(files.length * .625)],
+			files[Math.floor(files.length * .75)],
+			files[Math.floor(files.length * .875)],
+			files[files.length - 1]
+		]	
+
+		for (const file of files2) {
+			const data = await this.page.evaluate(
+				evaluateParseFile,
+				this.docereConfigData.config as any,
+				file
+			)
+			Object.keys(data).forEach(key => keys.add(key))
+		}
+
+		return keys
 	}
 
 	close() {
