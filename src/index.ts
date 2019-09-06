@@ -2,23 +2,25 @@ import * as fs from 'fs'
 import * as path from 'path'
 import Puppenv from './puppenv'
 import './puppenv.utils'
+import indexDocument, { createIndex, deleteIndex } from './index-document'
 require = require('esm')(module) 
 const defaultDocereConfigData = require('docere-config').default
+
+function getProjectPath(slug: string = '') {
+	return path.resolve(`node_modules/docere-config/projects/${slug}`)
+}
 
 function logError(msg: string) {
 	console.log("\x1b[31m", msg, "\x1b[0m")
 }
 
-import indexDocument, { createIndex, deleteIndex } from './index-document'
+async function handleProject(projectSlug: string) {
+	const configPath = `${getProjectPath(projectSlug)}/index.js`
 
-async function main() {
-	const projectSlug = process.argv[2]
-	if (projectSlug == null) return logError('No project ID!')
-
-	const configPath = path.resolve(`node_modules/docere-config/projects/${projectSlug}/index.js`)
 	if (!fs.existsSync(configPath)) {
 		return logError(`No config file for project: ${projectSlug}`)
 	}
+
 	const dcdImport: { default: DocereConfigData } = await import(configPath)
 	const docereConfigData: DocereConfigData = {
 		...defaultDocereConfigData,
@@ -26,7 +28,7 @@ async function main() {
 		config: {...defaultDocereConfigData.config, ...dcdImport.default.config }
 	}
 
-	const files = fs.readdirSync(`node_modules/docere-config/projects/${projectSlug}/xml`) //.slice(0, 30)
+	const files = fs.readdirSync(`${getProjectPath(projectSlug)}/xml`) //.slice(0, 30)
 	if (!files.length) {
 		return logError(`No files found for project: ${projectSlug}`)
 	}
@@ -55,5 +57,15 @@ async function main() {
 	metadataKeys.delete('text')
 	if (metadataKeys.size) console.warn(`Unconfigured metadata:`, ...metadataKeys)
 }
+
+async function main() {
+	let projects = process.argv.slice(2, 3)
+	if (!projects.length) projects = fs.readdirSync(getProjectPath())
+
+	for (const projectSlug of projects) {
+		await handleProject(projectSlug)
+	}
+}
+
 
 main()
