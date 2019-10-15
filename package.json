@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
+    "postinstall": "./postinstall.sh",
     "watch": "tsc -w"
   },
   "dependencies": {
